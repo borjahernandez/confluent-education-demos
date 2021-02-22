@@ -17,9 +17,9 @@ The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Co
 * If the demo requires the use of a ksqlDB app, consider creating the ksqlDB app in advance (before starting the class or during a break) since Confluent Cloud takes around 10 minutes to provide resources to this new app
 * Once the demo is finished, please do some housekeeping deleting the topics and ksqlDB apps that you created during the demo
 
-# Data Pipelines
+# List of demos
 
-| Demo                                       | Description                                        | Course
-| ------------------------------------------ | -------------------------------------------------- | ------------
+| Demo                                  | Description                                | Course
+| ------------------------------------- | ------------------------------------------ | ------------
 | [change-serialization-format-ksqldb](change-serialization-format-ksqldb/) | Showing how to increase the number of partitions of a topic keeping messages with the same key in the same partition (workaround: migrating the data to a new topic using ksqlDB) | ADM, DEV, STR
 | [Connect and Kafka Streams](connect-streams-pipeline/README.md) |   [Y](connect-streams-pipeline/README.md)   |   N
