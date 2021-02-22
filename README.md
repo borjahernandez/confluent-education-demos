@@ -19,7 +19,7 @@ The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Co
 
 # List of demos
 
-| &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Demo &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Description | Course
+| <div style="width:290px">Demo</div> | Description | Course
 | ------------------------------------- | ------------------------------------------ | ------------
 | [change-serialization-format-ksqldb](change-serialization-format-ksqldb/) | In this Demo, a producer writes data in Kafka from a CSV file using the StringSerializer. A ksqlDB app is created to convert the data from String to JSON format, and then the data is consumed to display it in JSON format | DEV STR
 | implement-custom-partitioner | Showing the consequences of producing data with a "hot" key using the Default Partitioner and how that problem can be resolved by using a Custom Partitioner | ADM DEV STR
