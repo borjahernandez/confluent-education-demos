@@ -15,4 +15,4 @@ Produce messages to and consume messages from a Kafka cluster using the Java Pro
 # Deployment Considerations
 
 * If the demo requires the use of a ksqlDB app, consider creating the ksqlDB app in advance (before starting the class or during a break) since Confluent Cloud takes around 10 minutes to provide resources to this new app
-* Once the Demo is finished, please do some housekeeping deleting the topics and ksqlDB apps that you created during the Demo
+* Once the demo is finished, please do some housekeeping deleting the topics and ksqlDB apps that you created during the demo
