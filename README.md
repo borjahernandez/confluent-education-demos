@@ -7,7 +7,7 @@ The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Co
 # Prerequisites
 
 * Java 1.8 or higher to run the demo application
-* Gradle to compile the demo applications
+* [Gradle](https://gradle.org/install) to compile the demo applications
 * Create a local file (e.g. at `$HOME/.confluent/java_ccloud.config`) with configuration parameters to connect to your Kafka cluster in Confluent Cloud. Check the template file [java_ccloud.config](java_ccloud.config)
 * [Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/install.html)
 * IDE to show the code of local producers/consumers to students (if required)
