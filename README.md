@@ -1,8 +1,8 @@
 # Overview
 
 Set of short demos that can be quickly performed during a class to reinforce the learning of key concepts or to answer questions by showing how to do it. The idea is to have easy access to all the demos regardless of the class that is being given.
-Produce messages to and consume messages from a Kafka cluster using the Java Producer and Consumer, and Kafka Streams API.
 
+The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Consumers.
 
 # Prerequisites
 
