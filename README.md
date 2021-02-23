@@ -14,6 +14,7 @@ The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Co
 
 # Deployment Considerations
 
+* You may need to set the execution flag on your gradlew files by running `chmod +x gradlew` in the producer and consumer-group directories
 * If the demo requires the use of a ksqlDB app, consider creating the ksqlDB app in advance (before starting the class or during a break) since Confluent Cloud takes around 10 minutes to provide resources to this new app
 * Once the demo is finished, please do some housekeeping deleting the topics and ksqlDB apps that you created during the demo
 
