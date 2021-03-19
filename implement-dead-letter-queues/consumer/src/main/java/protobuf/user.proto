@@ -1,0 +1,14 @@
+syntax = "proto3";
+package user;
+
+option java_package = "clients.UserProtos";
+
+message User {
+  int32 id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string email = 4;
+  string birthday = 5;
+  int64 regTimestamp = 6;
+  bool activeAccount = 7;
+}
