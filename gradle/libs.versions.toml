@@ -1,0 +1,15 @@
+[versions]
+kafka = "4.3.1"
+confluent = "8.3.2"
+protobufJava = "4.34.0"
+slf4j = "2.0.20"
+protobufPlugin = "0.10.0"
+
+[libraries]
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+kafka-protobuf-serializer = { module = "io.confluent:kafka-protobuf-serializer", version.ref = "confluent" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobufJava" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+[plugins]
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew build --console plain
+
+  # Runs every demo end to end against the docker compose cluster, with small record counts
+  demos:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      NUM_RECORDS: "200"
+      SLEEP_MS: "0"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew installDist --console plain
+
+      - name: Start the local cluster
+        run: |
+          docker compose up -d --wait kafka schema-registry
+          docker compose up -d ksqldb ksqldb-cli
+          for i in $(seq 60); do curl -sf localhost:8081/subjects && curl -sf localhost:8088/info && break; sleep 2; done
+
+      - name: Create topics
+        run: |
+          t() { docker compose exec -T kafka kafka-topics --bootstrap-server kafka:29092 --create --topic "$1" --partitions "$2"; }
+          t five-partitions-topic 5
+          t csv-topic 6
+          t default-topic 5
+          t custom-topic 5
+          t user-topic 6
+          t user-topic-dlq 1
+
+      - name: "Demo: change the number of partitions"
+        run: |
+          cd change-number-partitions-ksqldb/producer
+          ./build/install/producer/bin/producer ../../config/local.properties
+          cd ..
+          docker compose exec -T ksqldb-cli ksql http://ksqldb:8088 -f /demos/change-number-partitions-ksqldb/migration.sql
+          ../scripts/ci/expect-count.sh ten-partitions-topic 200
+          ../scripts/ci/expect-partitions.sh ten-partitions-topic 10
+          ../scripts/ci/expect-one-partition-per-key.sh ten-partitions-topic
+
+      - name: "Demo: change the serialization format"
+        run: |
+          cd change-serialization-format-ksqldb/producer
+          ./build/install/producer/bin/producer ../../config/local.properties
+          cd ..
+          docker compose exec -T ksqldb-cli ksql http://ksqldb:8088 -f /demos/change-serialization-format-ksqldb/change-format.sql
+          ../scripts/ci/expect-count.sh json-topic 200
+          docker compose exec -T kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic json-topic \
+            --from-beginning --max-messages 1 | jq -e '.FIRST_NAME and .COUNTRY'
+
+      - name: "Demo: custom partitioner"
+        run: |
+          cd implement-custom-partitioner/producer
+          PARTITIONER=custom TOPIC=custom-topic ./build/install/producer/bin/producer ../../config/local.properties
+          cd ..
+          ../scripts/ci/expect-count.sh custom-topic 200
+          # partition 0 holds the hot key and nothing else
+          docker compose exec -T kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic custom-topic \
+            --partition 0 --offset earliest --timeout-ms 10000 --formatter-property print.key=true --formatter-property key.separator='|' \
+            | cut -d'|' -f1 | sort -u > keys.txt || true
+          cat keys.txt
+          test "$(cat keys.txt)" = "United States"
+
+      - name: "Demo: dead letter queues"
+        run: |
+          cd implement-dead-letter-queues
+          # The naive producer must die on line 6
+          if (cd producer && ./build/install/producer/bin/producer ../../config/local.properties); then
+            echo "expected the naive producer to fail"; exit 1
+          fi
+          (cd producer-dlq && ./build/install/producer-dlq/bin/producer-dlq ../../config/local.properties)
+          # a poison pill for the consumer: not Protobuf at all
+          echo "not-a-user" | docker compose exec -T kafka kafka-console-producer --bootstrap-server kafka:29092 --topic user-topic
+          timeout 30 ./consumer-dlq/build/install/consumer-dlq/bin/consumer-dlq ../config/local.properties > consumer.log || true
+          grep -q "POISON PILL" consumer.log
+          grep -q "ID: 7" consumer.log
+          docker compose exec -T kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic user-topic-dlq \
+            --from-beginning --timeout-ms 10000 --formatter-property print.headers=true > dlq.txt || true
+          cat dlq.txt
+          grep -q "id=6|Colby" dlq.txt
+          grep -q "not-a-user" dlq.txt
+          grep -q "16|Chastity" dlq.txt
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 200

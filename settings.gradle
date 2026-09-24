@@ -1,0 +1,18 @@
+rootProject.name = 'confluent-education-demos'
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://packages.confluent.io/maven/' }
+    }
+}
+
+include 'common'
+include 'change-number-partitions-ksqldb:producer'
+include 'change-number-partitions-ksqldb:consumer-group'
+include 'change-serialization-format-ksqldb:producer'
+include 'implement-custom-partitioner:producer'
+include 'implement-custom-partitioner:consumer-group'
+include 'implement-dead-letter-queues:producer'
+include 'implement-dead-letter-queues:producer-dlq'
+include 'implement-dead-letter-queues:consumer-dlq'
