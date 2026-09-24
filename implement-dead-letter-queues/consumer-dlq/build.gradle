@@ -16,5 +16,5 @@ dependencies {
 sourceSets.main.proto.srcDir '../proto'
 
 protobuf {
-    protoc { artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}" }
+    protoc { artifact = "com.google.protobuf:protoc:${libs.versions.protobufJava.get()}" }
 }
