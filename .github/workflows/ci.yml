@@ -100,6 +100,7 @@ jobs:
           cat dlq.txt
           grep -q "id=6|Colby" dlq.txt
           grep -q "not-a-user" dlq.txt
+          grep -q "16|Chastity" dlq.txt
 
       - name: Logs on failure
         if: failure()
