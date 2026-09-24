@@ -77,7 +77,7 @@ public class Consumer {
           headers.add("source.topic", e.topicPartition().topic().getBytes(StandardCharsets.UTF_8));
           headers.add("source.partition", String.valueOf(e.topicPartition().partition()).getBytes(StandardCharsets.UTF_8));
           headers.add("source.offset", String.valueOf(e.offset()).getBytes(StandardCharsets.UTF_8));
-          dlqProducer.send(new ProducerRecord<>(DLQ_TOPIC, null, null, bytes(e.keyBuffer()), bytes(e.valueBuffer()), headers)).get();
+          dlqProducer.send(new ProducerRecord<byte[], byte[]>(DLQ_TOPIC, (Integer) null, bytes(e.keyBuffer()), bytes(e.valueBuffer()), headers)).get();
           System.out.printf("%nPOISON PILL at %s offset %d sent to %s: %s%n",
               e.topicPartition(), e.offset(), DLQ_TOPIC, e.getCause().getMessage());
           consumer.seek(e.topicPartition(), e.offset() + 1);
