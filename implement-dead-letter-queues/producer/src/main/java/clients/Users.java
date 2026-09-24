@@ -18,7 +18,15 @@ final class Users {
         .setEmail(values[3])
         .setBirthday(values[4])
         .setRegTimestamp(Long.parseLong(values[5]))
-        .setActiveAccount(Boolean.parseBoolean(values[6]))
+        .setActiveAccount(parseBoolean(values[6]))
         .build();
+  }
+
+  // Boolean.parseBoolean turns anything that is not "true", even "", into false
+  private static boolean parseBoolean(String value) {
+    if (!value.equals("true") && !value.equals("false")) {
+      throw new IllegalArgumentException("ActiveAccount must be true or false, got \"" + value + "\"");
+    }
+    return Boolean.parseBoolean(value);
   }
 }

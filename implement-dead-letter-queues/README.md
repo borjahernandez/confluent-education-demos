@@ -25,7 +25,7 @@ A few lines are deliberately broken:
 ```
 id=6|Colby|Winters|in.tempus.eu@vel.org|May 23, 1988|1583641915|false      <- Id is not a number
 11|Dacey|Pruitt|accumsan.neque.et@lacusUtnec.ca|Dec 16, 1983||false        <- empty timestamp
-16|Chastity|Brewer|ornare@velfaucibusid.edu|Sep 6, 1967|1558865475|       <- missing field
+16|Chastity|Brewer|ornare@velfaucibusid.edu|Sep 6, 1967|1558865475|       <- empty ActiveAccount
 ```
 
 ## Steps
@@ -96,7 +96,7 @@ which carries the record's partition, offset and raw bytes, copies them to the D
 past the bad record:
 
 ```
-POISON PILL at user-topic-3 offset 12 sent to user-topic-dlq: Unknown magic byte!
+POISON PILL at user-topic-3 offset 12 sent to user-topic-dlq: Error deserializing Protobuf message for id ...
 ```
 
 ## Clean up
