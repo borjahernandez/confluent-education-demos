@@ -69,7 +69,7 @@ Message sent: 7|Allegra|Ortega|nisi.Cum.sociis@ategestasa.co.uk|Dec 10, 1969|160
 **4. Look at the DLQ**
 
 ```bash
-docker compose exec kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic user-topic-dlq --from-beginning --property print.headers=true
+docker compose exec kafka kafka-console-consumer --bootstrap-server kafka:29092 --topic user-topic-dlq --from-beginning --formatter-property print.headers=true
 # Confluent Cloud: open user-topic-dlq in the Cloud Console to see the headers
 ```
 
