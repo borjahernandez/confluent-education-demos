@@ -1,81 +1,49 @@
 package clients;
 
 import clients.UserProtos.UserOuterClass.User;
+import demo.Config;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Properties;
-
+/**
+ * The naive producer: parses each line of users-data-incr.csv into a Protobuf User and produces
+ * it. Line 6 is malformed, so the first bad row throws and the whole producer dies.
+ *
+ * <p>Env vars: TOPIC (default "user-topic"), NUM_RECORDS (default 1,000,000), SLEEP_MS (default 1000).
+ */
 public class Producer {
-  static final String DATA_FILE_PREFIX = "./data/";
-  static final String KAFKA_TOPIC = (System.getenv("TOPIC") != null) ? System.getenv("TOPIC") : "user-topic";
-  static final int NUM_RECORDS = Integer.parseInt((System.getenv("NUM_RECORDS") != null) ? System.getenv("NUM_RECORDS") : "1000000");
+  static final String KAFKA_TOPIC = Config.env("TOPIC", "user-topic");
+  static final int NUM_RECORDS = Config.envInt("NUM_RECORDS", 1_000_000);
+  static final int SLEEP_MS = Config.envInt("SLEEP_MS", 1000);
 
-  /**
-   * Java producer.
-   */
-  public static void main(String[] args) throws IOException, InterruptedException {
-    System.out.println("Starting Java producer.");
-
-    // Creating the Kafka producer
-    final Properties settings = loadConfig(args[0]);
+  public static void main(String[] args) throws Exception {
+    final Properties settings = Config.load(args);
     settings.put(ProducerConfig.CLIENT_ID_CONFIG, "demo-producer");
     settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
     settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaProtobufSerializer.class);
 
-    final KafkaProducer<String, User> producer = new KafkaProducer<>(settings);
+    // Format: Id|FirstName|LastName|Email|Birthday|RegistrationTimestamp|ActiveAccount
+    final List<String> rows = Files.readAllLines(Path.of("../data/users-data-incr.csv"), StandardCharsets.UTF_8);
 
-    
-    // Adding a shutdown hook to clean up when the application exits
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      System.out.println("Closing producers.");
-      producer.close();
-    }));
+    try (KafkaProducer<String, User> producer = new KafkaProducer<>(settings)) {
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> producer.close(Duration.ofSeconds(5))));
 
-    int pos = 0;
-    // Format of users-data-incr.csv (1000 records) --> Id,FirstName,LastName,Email,Birthday,RegistrationTimestamp,ActiveAccount
-    final String[] rows = Files.readAllLines(Paths.get(DATA_FILE_PREFIX + "users-data-incr.csv"),
-            StandardCharsets.UTF_8).toArray(new String[0]);
-
-    for (int i = 0; i < NUM_RECORDS; i++) {
-      final String line = rows[pos];
-      final String[] values = line.split("\\|");
-      final User message = User.newBuilder()
-              .setId(Integer.parseInt(values[0]))
-              .setFirstName(values[1])
-              .setLastName(values[2])
-              .setEmail(values[3])
-              .setBirthday(values[4])
-              .setRegTimestamp(Long.parseLong(values[5]))
-              .setActiveAccount(Boolean.parseBoolean(values[6]))
-              .build();
-      final String key = values[0];
-
-      final ProducerRecord<String, User> record = new ProducerRecord<>(KAFKA_TOPIC, key, message);
-      producer.send(record);
-      System.out.println("Message sent: " + line);
-      Thread.sleep(1000);
-      pos = (pos + 1) % rows.length;
+      for (int i = 0; i < NUM_RECORDS; i++) {
+        final String line = rows.get(i % rows.size());
+        final User user = Users.parse(line); // throws on a malformed line
+        producer.send(new ProducerRecord<>(KAFKA_TOPIC, String.valueOf(user.getId()), user));
+        System.out.println("Message sent: " + line);
+        Thread.sleep(SLEEP_MS);
+      }
     }
-  }
-
-  public static Properties loadConfig(final String configFile) throws IOException {
-    if (!Files.exists(Paths.get(configFile))) {
-      throw new IOException(configFile + " not found.");
-    }
-    final Properties cfg = new Properties();
-    try (InputStream inputStream = new FileInputStream(configFile)) {
-      cfg.load(inputStream);
-    }
-    return cfg;
   }
 }
