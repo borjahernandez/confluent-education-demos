@@ -1,0 +1,26 @@
+plugins {
+    alias(libs.plugins.protobuf) apply false
+}
+
+subprojects {
+    // Builds and runs on any JDK 17 or newer
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 17
+    }
+
+    // Every demo reads its connection settings from a properties file:
+    //   ./gradlew :<demo>:<client>:run                          -> config/local.properties (docker compose)
+    //   ./gradlew :<demo>:<client>:run -Pconfig=config/ccloud.properties   -> Confluent Cloud
+    plugins.withId('application') {
+        dependencies {
+            implementation project(':common')
+            runtimeOnly libs.slf4j.simple
+        }
+        def configFile = rootProject.file(providers.gradleProperty('config').getOrElse('config/local.properties'))
+        tasks.named('run', JavaExec) {
+            workingDir = projectDir
+            args configFile.absolutePath
+            standardInput = System.in
+        }
+    }
+}

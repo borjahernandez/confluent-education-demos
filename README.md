@@ -1,28 +1,66 @@
-# Overview
+# Confluent Education Demos
 
-Set of short demos that can be quickly performed during a class to reinforce the learning of key concepts or to answer questions by showing how to do it. The idea is to have easy access to all the demos regardless of the class that is being given.
+[![CI](https://github.com/borjahernandez/confluent-education-demos/actions/workflows/ci.yml/badge.svg)](https://github.com/borjahernandez/confluent-education-demos/actions/workflows/ci.yml)
 
-The demos use a Kafka cluster in Confluent Cloud and local Java Producers and Consumers.
+Short, self-contained Apache Kafka demos I use in class to make a concept stick, or to answer a
+question by showing it rather than describing it. Each one takes 5 to 15 minutes, runs against a
+local cluster or Confluent Cloud, and is tested end to end in CI on every push.
 
-# Prerequisites
+| Demo | What it shows | Course |
+| --- | --- | --- |
+| [Change the number of partitions](change-number-partitions-ksqldb/) | You cannot add partitions to a keyed topic without breaking key ordering, so migrate the data to a new topic with ksqlDB instead | ADM · DEV · STR |
+| [Change the serialization format](change-serialization-format-ksqldb/) | Turn a topic of CSV strings into JSON with two ksqlDB statements | DEV · STR |
+| [Custom partitioner](implement-custom-partitioner/) | What a "hot" key does to consumer lag, and how a custom `Partitioner` fixes it | ADM · DEV · STR |
+| [Dead letter queues](implement-dead-letter-queues/) | Keep a producer *and* a consumer running when they meet a bad record, by routing it to a DLQ | ADM · DEV · STR |
 
-* Java 1.8 or higher to run the demo application
-* [Gradle](https://gradle.org/install) to compile the demo applications
-* Create a local file at **`$HOME/.confluent/java_ccloud.config`** with the configuration parameters to connect to your Kafka cluster in Confluent Cloud. Check the template file [java_ccloud.config](java_ccloud.config)
-* [Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/install.html)
-* IDE to show the code of the local Java Producers and Consumers to students (if required)
+## Requirements
 
-# Deployment Considerations
+- JDK 17 or newer. Gradle is not needed; the wrapper downloads it.
+- Either **Docker** (for the local cluster) or a **Confluent Cloud** cluster and the
+  [`confluent` CLI](https://docs.confluent.io/confluent-cli/current/install.html).
 
-* If you get this error when trying to run a Java client **`-bash: ./gradlew: Permission denied`**. You may need to set the execution flag on your gradlew files by running **`chmod +x gradlew`** in the producer and consumer-group directories
-* If the demo requires the use of a ksqlDB app, consider creating the ksqlDB app in advance (before starting the class or during a break) since Confluent Cloud takes around 10 minutes to provide resources to this new app
-* Once the demo is finished, please do some housekeeping deleting the topics and ksqlDB apps that you created during the demo
+## Running against a local cluster
 
-# List of demos
+```bash
+docker compose up -d        # Kafka (KRaft), Schema Registry and ksqlDB
+./gradlew build             # compile everything once
+```
 
-| Demo | Description | Course
-| ---- | ----------- | ------
-| [change-number-partitions-ksqldb](change-number-partitions-ksqldb/) | Showing how to increase the number of partitions of a topic keeping messages with the same key in the same partition (workaround: migrating the data to a new topic using ksqlDB) | ADM DEV STR
-| [change-serialization-format-ksqldb](change-serialization-format-ksqldb/) | In this Demo, a producer writes data in Kafka from a CSV file using the StringSerializer. A ksqlDB app is created to convert the data from String to JSON format, and then the data is consumed to display it in JSON format | DEV STR
-| [implement-custom-partitioner](implement-custom-partitioner/) | Showing the consequences of producing data with a "hot" key using the Default Partitioner and how that problem can be resolved by using a Custom Partitioner | ADM DEV STR
-| [implement-dead-letter-queues](implement-dead-letter-queues/) | Showing how to implement Dead Letter Queues (DLQs) in Java clients | ADM DEV STR
+Every client reads its connection settings from [`config/local.properties`](config/local.properties)
+by default. Topics are not auto-created, as on Confluent Cloud, so each demo starts by creating them:
+
+```bash
+docker compose exec kafka kafka-topics --bootstrap-server kafka:29092 --create --topic <name> --partitions <n>
+```
+
+ksqlDB statements run from the CLI container, which has the repo mounted at `/demos`:
+
+```bash
+docker compose exec ksqldb-cli ksql http://ksqldb:8088
+```
+
+Clean up with `docker compose down -v`.
+
+## Running against Confluent Cloud
+
+```bash
+cp config/ccloud.properties.template config/ccloud.properties   # then fill in the API keys
+./gradlew :implement-custom-partitioner:producer:run -Pconfig=config/ccloud.properties
+```
+
+`config/ccloud.properties` is gitignored. Before class:
+
+- Create the ksqlDB cluster in advance (during a break is fine). Provisioning takes a few minutes.
+- Afterwards, delete the topics and the ksqlDB cluster you created for the demo.
+
+## Layout
+
+```
+config/                     connection settings: local (docker compose) and Confluent Cloud template
+common/                     the one helper every client shares: load the properties file, read env vars
+<demo>/README.md            the script for the demo
+<demo>/producer, consumer…  one Gradle project per client, run with ./gradlew :<demo>:<client>:run
+scripts/ci/                 assertions the CI workflow uses to check each demo actually did its job
+```
+
+Built with Java 17, Gradle 9, Apache Kafka clients 4.3, Confluent Schema Registry serializers 8.3.
