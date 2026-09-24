@@ -62,7 +62,7 @@ public class Producer {
           headers.add("error.class", e.getClass().getName().getBytes(StandardCharsets.UTF_8));
           headers.add("error.message", String.valueOf(e.getMessage()).getBytes(StandardCharsets.UTF_8));
           headers.add("source.line", String.valueOf(i % rows.size() + 1).getBytes(StandardCharsets.UTF_8));
-          dlqProducer.send(new ProducerRecord<>(DLQ_TOPIC, null, null, line, headers));
+          dlqProducer.send(new ProducerRecord<String, String>(DLQ_TOPIC, (Integer) null, null, line, headers));
           System.out.println("INVALID MESSAGE sent to " + DLQ_TOPIC + ": " + line + "  (" + e + ")");
           continue;
         }
